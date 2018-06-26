@@ -259,23 +259,21 @@ public class Extractor {
 			csvValues[i]=new Integer(i).toString();
 		}
 		cw.writeRecord(csvValues);
-		Iterator<Set<Integer>> it=outValueCSV.iterator();
-//		while(it.hasNext()){
-//			for(int i=0;i<=count;i++)csvValues[i]="0";
-//			csvLine=it.next();
-//			Iterator<Integer> iter=csvLine.iterator();
-//			//先取出第一个元素，表示其恶意（1）还是非恶意（-1）
-//			if(iter.hasNext()){
-//				csvValues[0]=iter.next().toString();
-//				System.out.println(csvValues[0]);
-//			}
-//			while(iter.hasNext()){
-//				csvValues[iter.next()]="1";
-//			}
-//			
-//			cw.writeRecord(csvValues);
-//		}
-		 
+		for(Set<Integer> it:outValueCSV) {
+			for(int i=0;i<=count;i++)csvValues[i]="0";
+			for(Integer iter:it) {
+				if(iter.equals(0)) {
+					csvValues[0]="1";
+					continue;
+				}
+				else if(iter.equals(-1)) {
+					csvValues[0]="-1";
+					continue;
+				}
+				csvValues[iter]="1";
+			}
+			cw.writeRecord(csvValues);
+		}
 		cw.close();
 	}
 	/**
@@ -306,16 +304,9 @@ public class Extractor {
 			
 			if(files[i].isDirectory()){
 				csvLine.clear();
-				csvLine.add(1);
+				csvLine.add(0);
 				iterateFileDir(files[i].getPath());
 				outValueCSV.add(new HashSet<Integer>(csvLine));
-//				int k=0;
-//				for(Integer x:csvLine) {
-//					if(k++>100)break;
-//					System.out.print(x+" ");
-//				}
-//				System.out.println("");
-//				System.out.println(++xx+" ---- "+csvLine.size() );
 			}
 		}	
 		//System.out.println();
