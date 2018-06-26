@@ -18,7 +18,12 @@ import java.util.Map;
 import java.util.Set;
 
 import csvreader.CsvWriter;
-
+/**
+ * @ClassName:  RelationMatrix   
+ * @Description:TODO(生成每个apk的关系矩阵，分别有A、B、P、I矩阵)   
+ * @author: 练伟成 
+ * @date:   2018年6月26日 下午4:58:35
+ */
 public class RelationMatrix {
 	private MysqlInfo sqlInfo;
 	private Connection conn;
@@ -89,6 +94,13 @@ public class RelationMatrix {
 			e.printStackTrace();
 		}
 	}
+	/**
+	 * @Title: readFilesAndStore
+	 * @Description: TODO(再次读取smali代码，此次要考虑API之间的关系)
+	 * @param filePath
+	 * @return void    返回类型
+	 * @throws
+	 */
 	private void readFilesAndStore(String filePath) throws IOException, SQLException{
 		BufferedReader br = new BufferedReader(new FileReader(filePath));
 		boolean method=false;
@@ -173,6 +185,7 @@ public class RelationMatrix {
         }
         br.close();
 	}
+	
 	private void iterateFileDir(String dir){
 		File file=new File(dir);
 		File[] files=file.listFiles();
@@ -198,6 +211,13 @@ public class RelationMatrix {
 				
 		}
 	}
+	/**
+	 * @Title: generateMatrix
+	 * @Description: TODO(B矩阵是在之前读取smali文件自动生成，P,I矩阵的关系要考虑所有的API)
+	 * @param mp       apk拥有的APi集合 的一个映射
+	 * @param which    生成哪个矩阵P/I
+	 * @return void    返回类型
+	 */
 	private void generateMatrix(Map<String,Set<Integer>> mp,String which)
 	{
 		for(Set<Integer> set:mp.values()) {
@@ -211,6 +231,13 @@ public class RelationMatrix {
 			}
 		}
 	}
+	/**
+	 * @Title: outMatrixFile
+	 * @Description: TODO(输出矩阵，用文件的形式保存矩阵)
+	 * @param filePath
+	 * @param matrix    参数
+	 * @return void    返回类型
+	 */
 	private void  outMatrixFile(String filePath,Byte[][] matrix)
 	{
 		 // 创建CSV写对象
@@ -245,6 +272,13 @@ public class RelationMatrix {
        
         csvWriter.close();
 	}
+	/**
+	 * @Title: outputYFile
+	 * @Description: TODO(输出标签文件)
+	 * @param benignNum 良性app数量，恶意app=总数-benignNum
+	 * @param fileNum    参数
+	 * @return void    返回类型
+	 */
 	private void outputYFile(int benignNum, int fileNum) {
 		File file=new File("PrecomputedKernels");
 		if(!file.exists()) {
@@ -266,10 +300,10 @@ public class RelationMatrix {
 			BufferedWriter bw=new BufferedWriter(fw);
 			for(int i=1;i<=fileNum;i++) {
 				if(i<=benignNum) {
-					bw.write("1\r\n");
+					bw.write("-1\r\n");
 				}
 				else {
-					bw.write("-1\r\n");
+					bw.write("1\r\n");
 				}
 			}
 			bw.close();
