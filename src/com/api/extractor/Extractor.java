@@ -33,7 +33,7 @@ public class Extractor {
 	private Statement stmt;
 	private List<Set<Integer>> outValueCSV=new ArrayList<Set<Integer>>();
 	private Set<Integer> csvLine=new HashSet<Integer>();
-	public Extractor(MysqlInfo info){
+	 Extractor(MysqlInfo info){
 		this.sqlInfo=info;
 	}
 	/**
@@ -299,7 +299,6 @@ public class Extractor {
 		}
 		file=new File("malware");
 		files= file.listFiles();
-		int xx=0;
 		for(int i=0;i<files.length;i++){
 			
 			if(files[i].isDirectory()){
@@ -309,7 +308,6 @@ public class Extractor {
 				outValueCSV.add(new HashSet<Integer>(csvLine));
 			}
 		}	
-		//System.out.println();
 		writeCsvFile();
 		closeMysql();
 	}
@@ -362,22 +360,44 @@ public class Extractor {
 	 * @return void    ·µ»ØÀàÐÍ
 	 * @throws
 	 */
-	public void mrmrAndStoreNewApi(String filePath) throws IOException, InterruptedException{
+	public void mrmrAndStoreNewApi() {
+		String filePath="test.csv";
 		String command="cmd /c mrmr_win32.exe ./mrmr -i "+filePath+" -n 200 >output.mrmrout";
 		Runtime runtime=Runtime.getRuntime();
 		Process process;
-		File dir=new File(new File(filePath).getParent());
-		process=runtime.exec(command,null,dir);
-		process.waitFor();
-		storeNewApi(dir+"\\output.mrmrout");		
+		File dir=new File("").getAbsoluteFile();
+		try {
+			process=runtime.exec(command,null,dir);
+			try {
+				process.waitFor();
+			} catch (InterruptedException e) {
+				  
+				// TODO Auto-generated catch block  
+				e.printStackTrace();  
+				
+			}
+		} catch (IOException e1) {
+			  
+			// TODO Auto-generated catch block  
+			e1.printStackTrace();  
+			
+		}
+		
+		try {
+			storeNewApi("output.mrmrout");
+		} catch (IOException e) {
+			  
+			// TODO Auto-generated catch block  
+			e.printStackTrace();  
+			
+		}		
 	}
 	public static void main(String[] args) throws SQLException, IOException  {
 		// TODO Auto-generated method stub
 		Extractor test=new Extractor(new MysqlInfo("127.0.0.1","3306","root","root1234","android"));
 		test.Decompilation();
 		test.extractApi();
-		//test.storeNewApi("E:\\lian_workspace\\\\ApiExtractor\\output.mrmrout");
-	
+		test.mrmrAndStoreNewApi();
 	}
 
 }
