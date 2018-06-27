@@ -176,7 +176,14 @@ public class RelationMatrix {
         				else if(sub.startsWith("invoke-interface"))
         					subsub="invoke-interface";
         				if(!subsub.equals(""))
-        				invoke.put(subsub, new HashSet<Integer>(temp));
+        				{
+        					temp=invoke.get(subsub);
+        					if(temp==null) {
+        						temp=new HashSet<Integer>(); 
+        					}
+        					temp.add(number);
+        					invoke.put(subsub, new HashSet<Integer>(temp));
+        				}
         			}
         			res2.close();
         		}
