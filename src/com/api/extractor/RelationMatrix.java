@@ -1,10 +1,8 @@
 package com.api.extractor;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.sql.Connection;
@@ -194,6 +192,7 @@ public class RelationMatrix {
 	}
 	
 	private void iterateFileDir(String dir){
+	
 		File file=new File(dir);
 		File[] files=file.listFiles();
 		for(int i=0;i<files.length;i++){
@@ -279,50 +278,9 @@ public class RelationMatrix {
        
         csvWriter.close();
 	}
-	/**
-	 * @Title: outputYFile
-	 * @Description: TODO(输出标签文件)
-	 * @param benignNum 良性app数量，恶意app=总数-benignNum
-	 * @param fileNum    参数
-	 * @return void    返回类型
-	 */
-	private void outputYFile(int benignNum, int fileNum) {
-		File file=new File("PrecomputedKernels");
-		if(!file.exists()) {
-			file.mkdirs();
-		}
-		String  filePath="PrecomputedKernels"+"//y_train";
-	    file=new File(filePath);
-	    file.delete();
-		try {
-			file.createNewFile();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			System.out.println("创建新核文件失败");
-			e.printStackTrace();
-		}
-		FileWriter fw;
-		try {
-			fw = new FileWriter(file,true);
-			BufferedWriter bw=new BufferedWriter(fw);
-			for(int i=1;i<=fileNum;i++) {
-				if(i<=benignNum) {
-					bw.write("-1\r\n");
-				}
-				else {
-					bw.write("1\r\n");
-				}
-			}
-			bw.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-	}
+	
 	public void getRelationMatFromSmali(){
 		int fileNum=0;
-		int benignNum=0;
 		//连接数据库
 		connectMysql();
 		File file=new File("benign");
@@ -332,6 +290,7 @@ public class RelationMatrix {
 				pack.clear();
 				invoke.clear();
 				initMatrix();
+				System.out.println(fileNum);
 				iterateFileDir(files[i].getPath());
 				generateMatrix(pack,"P");	
 				generateMatrix(invoke,"I");
@@ -345,10 +304,12 @@ public class RelationMatrix {
 				outMatrixFile("relationMatrix\\"+fileNum+"\\P.csv",P_Matrix);
 				outMatrixFile("relationMatrix\\"+fileNum+"\\I.csv",I_Matrix);
 				
+					
+				
 			}
 			
 		}
-		benignNum=fileNum;
+	
 		
 		file=new File("malware");
 		files= file.listFiles();
@@ -373,12 +334,6 @@ public class RelationMatrix {
 		}	
 		//关闭数据库
 		closeMysql();
-		outputYFile(benignNum,fileNum);
+		
 	}
-	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-		RelationMatrix rm=new RelationMatrix();
-		rm.getRelationMatFromSmali();
-	}
-
 }

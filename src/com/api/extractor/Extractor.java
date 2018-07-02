@@ -13,7 +13,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import csvreader.CsvWriter;
@@ -31,10 +30,19 @@ public class Extractor {
 	private MysqlInfo sqlInfo;
 	private Connection conn;
 	private Statement stmt;
+	private int benignApp;
+	private int totalApp;
 	private List<Set<Integer>> outValueCSV=new ArrayList<Set<Integer>>();
 	private Set<Integer> csvLine=new HashSet<Integer>();
-	 Extractor(MysqlInfo info){
+	public Extractor(MysqlInfo info){
 		this.sqlInfo=info;
+		benignApp=totalApp=0;
+	}
+	public int getBenignAppNum() {
+		return this.benignApp;
+	}
+	public int getTotalAppNum() {
+		return this.totalApp;
 	}
 	/**
 	 * 
@@ -84,7 +92,7 @@ public class Extractor {
 	 * @return void    返回类型
 	 * @throws
 	 */
-	private void DecompilationAll(String fileDir) throws IOException, InterruptedException
+	private int DecompilationAll(String fileDir) throws IOException, InterruptedException
 	{
 		File file=new File(fileDir);
 		File[] files = file.listFiles();
@@ -100,12 +108,16 @@ public class Extractor {
 					String command="cmd /c apktool.jar d "+fileName+" -o "+(++apkNumber);
 					Runtime runtime=Runtime.getRuntime();
 					Process process;
+					
 					process=runtime.exec(command,null,dir);
 					process.waitFor();
+					
 					command="cmd /c rmdir /S /Q assets lib original res";
 				    dir=new File(fileDir+"\\"+apkNumber);
+				   // System.out.println(apkNumber);
 					process=runtime.exec(command,null,dir);
 					process.waitFor();
+					
 				}
 				/*命令模式：
 				String command="cmd /c apktool.jar d *.apk";
@@ -128,7 +140,7 @@ public class Extractor {
 				
 			}
 		}
-		
+		return apkNumber;
 	}
 	/**
 	 * @Title: Decompilation
@@ -137,8 +149,8 @@ public class Extractor {
 	public void Decompilation()
 	{
 		try {
-			DecompilationAll("benign");
-			DecompilationAll("malware");
+			this.benignApp=DecompilationAll("benign");
+			this.totalApp=DecompilationAll("malware")+this.benignApp;
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -170,7 +182,7 @@ public class Extractor {
         			continue;
         		}
         		String sub=line.substring(begin+1,end);
-        		if(!sub.startsWith("java")&&!sub.startsWith("org")){       		
+        		if(!sub.startsWith("java")){       		
         			continue;
         		}
         		
@@ -392,12 +404,4 @@ public class Extractor {
 			
 		}		
 	}
-	public static void main(String[] args) throws SQLException, IOException  {
-		// TODO Auto-generated method stub
-		Extractor test=new Extractor(new MysqlInfo("127.0.0.1","3306","root","root1234","android"));
-		test.Decompilation();
-		test.extractApi();
-		test.mrmrAndStoreNewApi();
-	}
-
 }

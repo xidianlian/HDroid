@@ -10,7 +10,38 @@ public class MetaPath {
 	//private static final int MAX_APP_NUM=1000;
 	private static final int FEATURE_SIZE=200;
 	private Matrix cMatrix;
-	
+	private double trainDataRatio=0.8;
+	public MetaPath(double ratio) {
+		this.trainDataRatio=ratio;
+		//保存路径
+		File file=new File("PrecomputedKernels");
+		if(!file.exists()) {
+			file.mkdirs();
+		}
+		file=new File("PrecomputedKernels\\kernelfile");
+		if(file.exists())file.delete();
+		try {
+			file.createNewFile();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	public MetaPath() {
+		//保存路径
+		File file=new File("PrecomputedKernels");
+		if(!file.exists()) {
+			file.mkdirs();
+		}
+		file=new File("PrecomputedKernels\\kernelfile");
+		if(file.exists())file.delete();
+		try {
+			file.createNewFile();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 	private int[][] getMatrixFromCsv(int appID,String which) {
 		int[][] matrix;
 		if(which.equals("A")) {
@@ -52,17 +83,39 @@ public class MetaPath {
 		}
 		return res;
 	}
-	public void outputMatrix(Matrix mat,String fileName) {
-		//保存路径
-		File file=new File("PrecomputedKernels");
-		if(!file.exists()) {
-			file.mkdirs();
-		}
-		String  filePath="PrecomputedKernels"+"//"+fileName;
-	    file=new File(filePath);
-	    file.delete();
+	private void outputKernelMatrixAndYFile(Matrix mat,String fileName,int benignApp,int totalApp) {
+		
+		String  filePath="PrecomputedKernels"+"\\"+fileName;
+		//kernel文件
+		File kernelfile=new File("PrecomputedKernels\\kernelfile");
+		FileWriter kf;
 		try {
-			file.createNewFile();
+			kf = new FileWriter(kernelfile,true);
+			BufferedWriter bwkf=new BufferedWriter(kf);
+			bwkf.write("-t 4 -f PrecomputedKernels/"+fileName+"\r\n");
+			bwkf.close();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
+		//核矩阵文件
+	    File kernelTrain=new File(filePath);
+	    File kernelTest=new File(filePath+".test");
+	    //y文件
+	    File yTrain=new File("PrecomputedKernels\\y_train");
+	    File yTest=new File("PrecomputedKernels\\y_test");
+	    
+	    kernelTrain.delete();
+	    kernelTest.delete();
+	    yTrain.delete();
+	    yTest.delete();
+	    
+		try {
+			kernelTrain.createNewFile();
+			kernelTest.createNewFile();
+			yTrain.createNewFile();
+			yTest.createNewFile();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			System.out.println("创建新核文件失败");
@@ -70,33 +123,82 @@ public class MetaPath {
 		}
 
 		try {
-			FileWriter fw = new FileWriter(file,true);
-			BufferedWriter bw=new BufferedWriter(fw);
+			//核文件
+			FileWriter fwTrain = new FileWriter(kernelTrain,true);
+			BufferedWriter bwTrain=new BufferedWriter(fwTrain);
+			FileWriter fwTest = new FileWriter(kernelTest,true);
+			BufferedWriter bwTest=new BufferedWriter(fwTest);
+			//y文件
+			FileWriter fwTrainY = new FileWriter(yTrain,true);
+			BufferedWriter bwTrainY=new BufferedWriter(fwTrainY);
+			FileWriter fwTestY = new FileWriter(yTest,true);
+			BufferedWriter bwTestY=new BufferedWriter(fwTestY);
 			int r=mat.getR();
 			int c=mat.getC();
 			if(r<=0||c<=0)
 			{
-				bw.close();
+				bwTestY.close();
+				bwTrainY.close();
+				bwTest.close();
+				bwTrain.close();
+				
 				return;
 			}
-			bw.write(""+(r-1)+" "+(c-1)+"\r\n");
+			int malwareApp=totalApp-benignApp;
+			int trainBenign=(int)(benignApp*trainDataRatio);
+			int trainMalware=(int)(malwareApp*trainDataRatio);
+			int trainNumber=trainBenign+trainMalware;
+			int testNumber=totalApp-trainNumber;
+			bwTrain.write(""+trainNumber+" "+trainNumber+"\r\n");
+			bwTest.write(""+testNumber+" "+trainNumber+"\r\n");
+			int malwareCnt=0;
 			for(int i=1;i<r;i++) {
 				String str="";
+				int flag=0;
 				for(int j=1;j<c;j++) {
-					str+=mat.getX()[i][j];
-					if(j!=c-1) {
-						str+=" ";
+					if(j<=trainBenign||(j>benignApp&&j<=benignApp+trainMalware)) {
+						if(flag!=0) {
+							str+=" ";
+						}
+						str+=mat.getX()[i][j];
+						flag=1;
 					}
 				}
-				bw.write(str+"\r\n");
+				if(i<=benignApp) {
+					if(i<=trainBenign) {
+						bwTrain.write(str+"\r\n");
+						bwTrainY.write("-1\r\n");
+					}
+					else {
+						bwTest.write(str+"\r\n");
+						bwTestY.write("-1\r\n");
+					}
+						
+				}
+				else {
+					malwareCnt++;
+					if(malwareCnt<=trainMalware) {
+						bwTrain.write(str+"\r\n");
+						bwTrainY.write("1\r\n");
+					}
+						
+					else {
+						bwTest.write(str+"\r\n");
+						bwTestY.write("1\r\n");
+					}
+						
+				}
 			}
-			bw.close();
+			bwTestY.close();
+			bwTrainY.close();
+			bwTest.close();
+			bwTrain.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
-	public void getCommutingMatrix(String metapath) {
+	public void getCommutingMatrix(String metapath,int benignApp,int totalApp) {
 		File file=new File("relationMatrix");
 		String[] files=file.list();
 		int AppNumber=files.length;
@@ -163,18 +265,7 @@ public class MetaPath {
 			}
 		}
 		String kernelFileName=getKernelFileName(metapath);
-		outputMatrix(cMatrix,kernelFileName);
-	}
-	
-	public static void main(String[] args) {
-		new MetaPath().getCommutingMatrix("AA");
-//		for(int i=0;i<res.getR();i++) {
-//			for(int j=0;j<res.getC();j++) {
-//				System.out.print(res.getX()[i][j]+" ");
-//			}
-//			System.out.println();
-//		}
-		
+		outputKernelMatrixAndYFile(cMatrix,kernelFileName,benignApp,totalApp);
 	}
 
 }
