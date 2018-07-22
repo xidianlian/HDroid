@@ -198,10 +198,16 @@ public class MetaPath {
 			e.printStackTrace();
 		}
 	}
-	public void getCommutingMatrix(String metapath,int benignApp,int totalApp) {
-		File file=new File("relationMatrix");
-		String[] files=file.list();
-		int AppNumber=files.length;
+	public void getCommutingMatrix(String metapath) {
+		File file=new File("benign\\API");
+		File[] files=file.listFiles();
+		int benignApp=files.length;
+		file=new File("malware\\API");
+		files=file.listFiles();
+		int malwareApp=files.length;
+//		File file=new File("relationMatrix");
+//		String[] files=file.list();
+		int AppNumber=benignApp+malwareApp;
 		cMatrix=new Matrix( new int[AppNumber+1][AppNumber+1]);
 		//矩阵行数和列数从1开始
 		Matrix A1=new Matrix(2,FEATURE_SIZE+1);
@@ -265,7 +271,7 @@ public class MetaPath {
 			}
 		}
 		String kernelFileName=getKernelFileName(metapath);
-		outputKernelMatrixAndYFile(cMatrix,kernelFileName,benignApp,totalApp);
+		outputKernelMatrixAndYFile(cMatrix,kernelFileName,benignApp,AppNumber);
 	}
 
 }

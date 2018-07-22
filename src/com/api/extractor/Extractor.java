@@ -1,8 +1,10 @@
 package com.api.extractor;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
@@ -15,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import csvreader.CsvWriter;
 
 /**
@@ -30,20 +33,20 @@ public class Extractor {
 	private MysqlInfo sqlInfo;
 	private Connection conn;
 	private Statement stmt;
-	private int benignApp;
-	private int totalApp;
+//	private int benignApp;
+//	private int totalApp;
 	private List<Set<Integer>> outValueCSV=new ArrayList<Set<Integer>>();
 	private Set<Integer> csvLine=new HashSet<Integer>();
 	public Extractor(MysqlInfo info){
 		this.sqlInfo=info;
-		benignApp=totalApp=0;
+		//benignApp=totalApp=0;
 	}
-	public int getBenignAppNum() {
-		return this.benignApp;
-	}
-	public int getTotalAppNum() {
-		return this.totalApp;
-	}
+//	public int getBenignAppNum() {
+//		return this.benignApp;
+//	}
+//	public int getTotalAppNum() {
+//		return this.totalApp;
+//	}
 	/**
 	 * 
 	 * @Title: connectMysql
@@ -92,11 +95,11 @@ public class Extractor {
 	 * @return void    返回类型
 	 * @throws
 	 */
-	private int DecompilationAll(String fileDir) throws IOException, InterruptedException
+	private void  DecompilationAll(String fileDir) throws IOException, InterruptedException
 	{
-		File file=new File(fileDir);
+		File file=new File(fileDir+"\\NewApk");
 		File[] files = file.listFiles();
-		int apkNumber=0;
+		
 		for(int i=0;i<files.length;i++)
 		{
 			if(files[i].isFile()==true)
@@ -104,44 +107,75 @@ public class Extractor {
 				String fileName=files[i].getName();
 				if(fileName.endsWith(".apk"))
 				{
-					File dir=new File(fileDir);
-					String command="cmd /c apktool.jar d "+fileName+" -o "+(++apkNumber);
-					Runtime runtime=Runtime.getRuntime();
-					Process process;
-					
-					process=runtime.exec(command,null,dir);
-					process.waitFor();
-					
+					String subFileName=fileName.substring(0, fileName.length()-4);
+					String command="cmd /c apktool.jar d "+"NewApk\\"+fileName+" -o "+"decompilation\\"+subFileName;
+					cmd(fileDir,command);
 					command="cmd /c rmdir /S /Q assets lib original res";
-				    dir=new File(fileDir+"\\"+apkNumber);
-				   // System.out.println(apkNumber);
-					process=runtime.exec(command,null,dir);
-					process.waitFor();
-					
+					cmd(fileDir+"\\decompilation\\"+subFileName,command);
 				}
-				/*命令模式：
-				String command="cmd /c apktool.jar d *.apk";
-				File dir=new File(fileDir);
-				Runtime runtime=Runtime.getRuntime();
-				Process process=runtime.exec(command,null,dir);
-				InputStream is = process.getInputStream();
-				BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-				process.waitFor();
-				
-				if (process.exitValue() != 0) {
-				    System.out.println("命令执行失败");
-				}
-				//打印输出信息
-				String s = null;
-				while ((s = reader.readLine()) != null) {
-				    System.out.println(s);
-				}
-				*/
-				
+
 			}
 		}
-		return apkNumber;
+		
 	}
+	private void cmd(String strdir,String command) {
+		File dir=new File(strdir);
+		Runtime runtime=Runtime.getRuntime();
+		Process process;
+		try {
+			process=runtime.exec(command,null,dir);
+			process.waitFor();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		/*命令模式：
+		String command="cmd /c apktool.jar d *.apk";
+		File dir=new File(fileDir);
+		Runtime runtime=Runtime.getRuntime();
+		Process process=runtime.exec(command,null,dir);
+		InputStream is = process.getInputStream();
+		BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+		process.waitFor();
+		
+		if (process.exitValue() != 0) {
+		    System.out.println("命令执行失败");
+		}
+		//打印输出信息
+		String s = null;
+		while ((s = reader.readLine()) != null) {
+		    System.out.println(s);
+		}
+		*/
+		
+	}
+	private void detectionRepetitiveApk(String path) {
+
+		//先找出反编译好的，已有的apk
+		Set<String>set=new HashSet<String>();
+		File file=new File(path+"\\ApkStore");
+		File[] files=file.listFiles();
+		for(int i=0;i<files.length;i++) {
+			String fileName=files[i].getName();
+			set.add(fileName);
+		}
+		//去重
+		file=new File(path+"\\NewApk");
+		files=file.listFiles();
+		for(int i=0;i<files.length;i++) {
+			String fileName=files[i].getName();
+			if(set.contains(fileName)) {	
+				fileName=fileName.substring(0, fileName.length()-4);
+				String command="cmd /c del /F /S /Q "+fileName+".apk";
+				cmd(path+"\\NewApk",command);
+			}
+		}
+		
+	}
+	
 	/**
 	 * @Title: Decompilation
 	 * @Description: TODO(调用DecompilationAll方法分别反编译恶意软件和良性软件)
@@ -149,8 +183,19 @@ public class Extractor {
 	public void Decompilation()
 	{
 		try {
-			this.benignApp=DecompilationAll("benign");
-			this.totalApp=DecompilationAll("malware")+this.benignApp;
+			detectionRepetitiveApk("benign");
+			detectionRepetitiveApk("malware");
+			
+			DecompilationAll("benign");
+			DecompilationAll("malware");
+			
+			String command="cmd /c move NewApk\\* ApkStore";
+			String dir=null;
+			dir="benign";
+			cmd(dir,command);
+			dir="malware";
+			cmd(dir,command);
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -167,11 +212,22 @@ public class Extractor {
 	 * @return void    返回类型
 	 * @throws
 	 */
-	private void readFilesAndStore(String filePath) throws IOException, SQLException{
+	private void readFilesAndStore(String filePath,String storeFileName) throws IOException, SQLException{
 		FileInputStream fis=new FileInputStream(filePath);
 		InputStreamReader isr=new InputStreamReader(fis);
 		BufferedReader br = new BufferedReader(isr);
+		File file=new File(storeFileName);
+		FileWriter fw = new FileWriter(file,true);
+		BufferedWriter bw=new BufferedWriter(fw);
         for (String line = br.readLine(); line != null; line = br.readLine()){
+        	if(line.startsWith(".method")) {
+        		bw.write(".method\r\n");
+        		continue;
+        	}
+        	else if(line.startsWith(".end method")) {
+        		bw.write(".end method\r\n");
+        		continue;
+        	}
         	if(line.indexOf('<')!=-1)continue;
         	line=line.trim();
         	if(line.startsWith("invoke")){
@@ -185,7 +241,7 @@ public class Extractor {
         		if(!sub.startsWith("java")){       		
         			continue;
         		}
-        		
+        		bw.write(line+"\r\n");
         		String sql;
         		
         		sql="select * from api where API='"+sub+"'";
@@ -210,6 +266,7 @@ public class Extractor {
     			
         	}
         }
+        bw.close();
         br.close();
 	}
 	/**
@@ -219,18 +276,18 @@ public class Extractor {
 	 * @return void    返回类型
 	 * @throws
 	 */
-	private void iterateFileDir(String dir) {
+	private void iterateFileDir(String dir,String storeFileName) {
 		File file=new File(dir);
 		File[] files=file.listFiles();
 		for(int i=0;i<files.length;i++){
 			String fileName=files[i].getName();
 			if(files[i].isDirectory()){
-				iterateFileDir(dir+"\\"+fileName);
+				iterateFileDir(dir+"\\"+fileName,storeFileName);
 			}
 			else if(files[i].isFile()){
 				if(fileName.endsWith(".smali")){
 					try {
-						readFilesAndStore(dir+"\\"+fileName);
+						readFilesAndStore(dir+"\\"+fileName,storeFileName);
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -295,28 +352,42 @@ public class Extractor {
 	public void extractApi() throws SQLException, IOException{
 		connectMysql();
 		outValueCSV.clear();
-		File file=new File("benign");
+		File apiFile=new File("benign\\API");
+		if(!apiFile.exists()) {
+			apiFile.mkdirs();
+		}
+		System.out.println("benign 特征提取...");
+		File file=new File("benign\\decompilation");
 		File[] files= file.listFiles();
 		for(int i=0;i<files.length;i++){
 			
 			if(files[i].isDirectory()){
 				csvLine.clear();
 				csvLine.add(-1);
-				
-				iterateFileDir(files[i].getPath());
+				String fileName="benign\\API\\"+files[i].getName()+".txt";
+				File storeFile=new File(fileName);
+				storeFile.delete();
+				storeFile.createNewFile();
+				iterateFileDir(files[i].getPath(),fileName);
 				outValueCSV.add(new HashSet<Integer>(csvLine));
 				//System.out.println(csvLine.size());
 			}
 			
 		}
-		file=new File("malware");
+		apiFile=new File("malware\\API");
+		if(!apiFile.exists()) {
+			apiFile.mkdirs();
+		}
+		System.out.println("malware 特征提取...");
+		file=new File("malware\\decompilation");
 		files= file.listFiles();
 		for(int i=0;i<files.length;i++){
 			
 			if(files[i].isDirectory()){
 				csvLine.clear();
 				csvLine.add(0);
-				iterateFileDir(files[i].getPath());
+				String fileName="malware\\API\\"+files[i].getName()+".txt";
+				iterateFileDir(files[i].getPath(),fileName);
 				outValueCSV.add(new HashSet<Integer>(csvLine));
 			}
 		}	

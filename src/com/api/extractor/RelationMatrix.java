@@ -130,7 +130,7 @@ public class RelationMatrix {
         			continue;
         		}
         		String sub=line.substring(begin+1,end);
-        		if(!sub.startsWith("java")&&!sub.startsWith("org")){       		
+        		if(!sub.startsWith("java")){       		
         			continue;
         		}
         		String sql1,sql2;
@@ -191,32 +191,6 @@ public class RelationMatrix {
         br.close();
 	}
 	
-	private void iterateFileDir(String dir){
-	
-		File file=new File(dir);
-		File[] files=file.listFiles();
-		for(int i=0;i<files.length;i++){
-			String fileName=files[i].getName();
-			if(files[i].isDirectory()){
-				iterateFileDir(dir+"\\"+fileName);
-			}
-			else if(files[i].isFile()){
-				if(fileName.endsWith(".smali")){
-					try {
-						readFilesAndStore(dir+"\\"+fileName);
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (SQLException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					
-				}
-			}
-				
-		}
-	}
 	/**
 	 * @Title: generateMatrix
 	 * @Description: TODO(B矩阵是在之前读取smali文件自动生成，P,I矩阵的关系要考虑所有的API)
@@ -248,6 +222,7 @@ public class RelationMatrix {
 	{
 		 // 创建CSV写对象
 		File file=new File(filePath);
+		file.delete();
 		if(!file.exists())
 		{
 			try {
@@ -283,15 +258,27 @@ public class RelationMatrix {
 		int fileNum=0;
 		//连接数据库
 		connectMysql();
-		File file=new File("benign");
+		File file=new File("benign\\API");
 		File[] files= file.listFiles();
+		String path=file.getPath();
 		for(int i=0;i<files.length;i++){
-			if(files[i].isDirectory()){
+			String fileName=files[i].getName();
+			if(fileName.endsWith(".txt")){
 				pack.clear();
 				invoke.clear();
 				initMatrix();
-				System.out.println(fileNum);
-				iterateFileDir(files[i].getPath());
+			
+				
+				try {
+					readFilesAndStore(path+"\\"+fileName);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				//System.out.println("read ////***");
 				generateMatrix(pack,"P");	
 				generateMatrix(invoke,"I");
 				fileNum++;
@@ -299,6 +286,7 @@ public class RelationMatrix {
 				if(!file.exists()){
 					file.mkdirs();
 				}
+				System.out.println(fileNum);
 				outMatrixFile("relationMatrix\\"+fileNum+"\\A.csv",A_Matrix);
 				outMatrixFile("relationMatrix\\"+fileNum+"\\B.csv",B_Matrix);
 				outMatrixFile("relationMatrix\\"+fileNum+"\\P.csv",P_Matrix);
@@ -311,14 +299,25 @@ public class RelationMatrix {
 		}
 	
 		
-		file=new File("malware");
+		file=new File("malware\\API");
 		files= file.listFiles();
+		path=file.getPath();
 		for(int i=0;i<files.length;i++){
-			if(files[i].isDirectory()){
+			String fileName=files[i].getName();
+			if(fileName.endsWith(".txt")){
 				pack.clear();
 				invoke.clear();
 				initMatrix();
-				iterateFileDir(files[i].getPath());
+				//iterateFileDir(files[i].getPath());
+				try {
+					readFilesAndStore(path+"\\"+fileName);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				generateMatrix(pack,"P");
 				generateMatrix(invoke,"I");
 				fileNum++;
@@ -326,6 +325,7 @@ public class RelationMatrix {
 				if(!file.exists()){
 					file.mkdirs();
 				}
+				System.out.println("malware:"+fileNum);
 				outMatrixFile("relationMatrix\\"+fileNum+"\\A.csv",A_Matrix);
 				outMatrixFile("relationMatrix\\"+fileNum+"\\B.csv",B_Matrix);
 				outMatrixFile("relationMatrix\\"+fileNum+"\\P.csv",P_Matrix);

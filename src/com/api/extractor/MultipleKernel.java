@@ -43,7 +43,7 @@ public class MultipleKernel {
 	public void smvTrain() {
 		
 		String command="cmd /c "
-		+ "svm-train.exe -s 0 -h 0 -m 400 -o 2.0 -a 1 -c 10.0 -l 1.0 -f 0 -j 1 -g 3 -k "
+		+ "svm-train.exe -s 0 -h 0 -m 400 -o 2.0 -a 7 -c 10.0 -l 1.0 -f 0 -j 1 -g 3 -k "
 		+ "PrecomputedKernels\\kernelfile "
 		+ "PrecomputedKernels\\y_train "
 		+ "PrecomputedKernels\\model_file "
@@ -54,7 +54,7 @@ public class MultipleKernel {
 	public void smvPredict() {
 		
 		String command="cmd /c "
-		+ "SVM-Predict.exe "
+		+ "SVM_Predict.exe "
 		+ "PrecomputedKernels\\y_test "
 		+ "PrecomputedKernels\\model_file "
 		+ "PrecomputedKernels\\prediction "
